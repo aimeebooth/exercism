@@ -10,53 +10,13 @@ defmodule BankAccount do
   """
   @opaque account :: pid
 
-  @impl true
-  def init(:ok) do
-    {:ok, %{balance: 0, status: :account_open}}
-  end
-
-  def start_link do
-    GenServer.start_link(__MODULE__, :ok)
-  end
-
-  @impl true
-  # balance inquiry when status: :account_closed
-  def handle_call(:balance, _from, %{status: :account_closed} = state) do
-    {:reply, {:error, :account_closed}, state}
-  end
-
-  @impl true
-  # balance inquiry
-  def handle_call(:balance, _from, state) do
-    {:reply, Map.get(state, :balance), state}
-  end
-
-  @impl true
-  # close bank/update status
-  def handle_call({:status, :account_closed}, _from, state) do
-    {:reply, :ok, Map.put(state, :status, :account_closed)}
-  end
-
-  @impl true
-  # balance update when status: account_closed
-  def handle_call({:balance, _amount}, _from, %{status: :account_closed} = state) do
-    {:reply, {:error, :account_closed}, state}
-  end
-
-  @impl true
-  # balance update
-  def handle_call({:balance, amount}, _from, state) do
-    balance = Map.get(state, :balance)
-    {:reply, :ok, Map.put(state, :balance, balance + amount)}
-  end
-
   @doc """
   Open the bank. Makes the account available.
   """
-  @spec open_bank() :: account
+  @spec open_bank!() :: account
   # TODO: handle errors?
-  # @spec open_bank() :: {:ok, account} | {:error, term()}
-  def open_bank() do
+  # @spec open_bank!() :: {:ok, account} | {:error, term()}
+  def open_bank!() do
     {:ok, account} = BankAccount.start_link()
     account
   end
@@ -83,5 +43,45 @@ defmodule BankAccount do
   @spec update(account, integer) :: any
   def update(account, amount) do
     GenServer.call(account, {:balance, amount})
+  end
+
+  def start_link do
+    GenServer.start_link(__MODULE__, :ok)
+  end
+
+  @impl GenServer
+  def init(:ok) do
+    {:ok, %{balance: 0, status: :account_open}}
+  end
+
+  @impl GenServer
+  # balance inquiry when status: :account_closed
+  def handle_call(:balance, _from, %{status: :account_closed} = state) do
+    {:reply, {:error, :account_closed}, state}
+  end
+
+  @impl GenServer
+  # balance inquiry
+  def handle_call(:balance, _from, %{balance: balance} = state) do
+    {:reply, balance, state}
+  end
+
+  @impl GenServer
+  # close bank/update status
+  def handle_call({:status, :account_closed}, _from, state) do
+    {:reply, :ok, Map.put(state, :status, :account_closed)}
+  end
+
+  @impl GenServer
+  # balance update when status: account_closed
+  def handle_call({:balance, _amount}, _from, %{status: :account_closed} = state) do
+    {:reply, {:error, :account_closed}, state}
+  end
+
+  @impl GenServer
+  # balance update
+  def handle_call({:balance, amount}, _from, state) do
+    balance = Map.get(state, :balance)
+    {:reply, :ok, Map.put(state, :balance, balance + amount)}
   end
 end

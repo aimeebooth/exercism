@@ -2,7 +2,7 @@ defmodule BankAccountTest do
   use ExUnit.Case
 
   setup do
-    account = BankAccount.open_bank()
+    account = BankAccount.open_bank!()
     {:ok, account: account}
   end
 
@@ -59,7 +59,7 @@ defmodule BankAccountTest do
   test "implementation for multiple account support", %{account: account} do
     assert is_pid(account)
 
-    account_two = BankAccount.open_bank()
+    account_two = BankAccount.open_bank!()
     assert is_pid(account_two)
 
     assert account != account_two
